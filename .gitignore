@@ -16,4 +16,6 @@ __pycache__/
 
 docker-compose.yml
 
-render.yml
+render.yaml
+
+nltk_data/
