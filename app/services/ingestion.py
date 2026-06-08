@@ -2,42 +2,47 @@
 Ingestion Service - Handles PDF processing, chunking, and database storage.
 This is the core pipeline that converts PDFs into searchable vector chunks.
 """
-import nltk
+
 import os
 import sys
+import subprocess
 
-# Set a writable directory for NLTK data
-nltk_data_dir = '/opt/render/nltk_data'
-os.makedirs(nltk_data_dir, exist_ok=True)
-nltk.data.path.append(nltk_data_dir)
+# ===== NLTK SETUP - Run BEFORE importing nltk =====
+NLTK_DATA_DIR = '/opt/render/nltk_data'
+os.makedirs(NLTK_DATA_DIR, exist_ok=True)
 
-# Download required data (only if not already present)
+# Set environment variable for nltk
+os.environ['NLTK_DATA'] = NLTK_DATA_DIR
+
+# Download required data using subprocess (doesn't import nltk yet)
 try:
-    nltk.data.find('corpora/wordnet.zip')
-except LookupError:
-    nltk.download('wordnet', download_dir=nltk_data_dir, quiet=False)
+    subprocess.run([
+        sys.executable, '-c',
+        f"""
+import nltk
+nltk.data.path.append('{NLTK_DATA_DIR}')
+nltk.download('wordnet', download_dir='{NLTK_DATA_DIR}', quiet=False)
+nltk.download('punkt', download_dir='{NLTK_DATA_DIR}', quiet=False)
+nltk.download('punkt_tab', download_dir='{NLTK_DATA_DIR}', quiet=False)
+"""
+    ], check=True)
+except Exception as e:
+    print(f"Warning: NLTK download failed: {e}")
 
-try:
-    nltk.data.find('tokenizers/punkt.zip')
-except LookupError:
-    nltk.download('punkt', download_dir=nltk_data_dir, quiet=False)
+# Now it's safe to import nltk
+import nltk
+# Ensure nltk can find the data
+nltk.data.path.append(NLTK_DATA_DIR)
 
+# ===== Rest of imports =====
 import io
 from typing import List
 from PyPDF2 import PdfReader
-
 from sqlalchemy.orm import Session
 
 from app.database import SessionLocal
 from app.models import Document, DocumentChunk
 from app.services.embeddings import generate_embedding
-
-# Download NLTK data for sentence tokenization (run once)
-try:
-    nltk.data.find('tokenizers/punkt')
-except LookupError:
-    nltk.download('punkt')
-    nltk.download('punkt_tab')
 
 
 def extract_text_from_pdf(file_content: bytes) -> str:

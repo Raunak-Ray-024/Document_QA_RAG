@@ -8,12 +8,12 @@ RUN apt-get update && apt-get install -y \
     g++ \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first (for better caching)
+# Create NLTK data directory
+RUN mkdir -p /opt/render/nltk_data && chmod 777 /opt/render/nltk_data
+
+# Copy requirements first
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-
-# Download NLTK data
-#RUN python -m nltk.downloader wordnet punkt
 
 # Pre-download sentence-transformers model
 RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
