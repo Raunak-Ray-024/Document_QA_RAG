@@ -1,3 +1,7 @@
+# Initialize NLTK data first before any other imports
+from app.nltk_setup import setup_nltk_data
+setup_nltk_data()
+
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
